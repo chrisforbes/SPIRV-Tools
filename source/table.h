@@ -17,6 +17,8 @@
 
 #include "spirv/1.2/spirv.h"
 
+#include <unordered_map>
+
 #include "extensions.h"
 #include "message.h"
 #include "spirv-tools/libspirv.hpp"
@@ -73,6 +75,7 @@ typedef struct spv_opcode_table_t {
 typedef struct spv_operand_table_t {
   const uint32_t count;
   const spv_operand_desc_group_t* types;
+  mutable std::unordered_map<uint64_t, const spv_operand_desc_t *> index;
 } spv_operand_table_t;
 
 typedef struct spv_ext_inst_table_t {

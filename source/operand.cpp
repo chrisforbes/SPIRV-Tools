@@ -31,6 +31,25 @@ namespace v1_2 {
 #include "operand.kinds-1.2.inc"
 }  // namespace v1_2
 
+static uint64_t MakeOperandTableKey(uint32_t type, uint32_t value) {
+    return (uint64_t(type) << 32) | value;
+}
+
+static void BuildOperandTableIndex(spv_operand_table table) {
+  if (table->index.size())
+    return; // Already built.
+
+  for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
+    const auto& group = table->types[typeIndex];
+    for (uint64_t index = 0; index < group.count; ++index) {
+      const auto& entry = group.entries[index];
+      auto &tableEntry = table->index[MakeOperandTableKey(group.type, entry.value)];
+      if (!tableEntry)
+        tableEntry = &entry;
+    }
+  }
+}
+
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
                                 spv_target_env env) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
@@ -55,13 +74,16 @@ spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
     case SPV_ENV_OPENGL_4_3:
     case SPV_ENV_OPENGL_4_5:
       *pOperandTable = &table_1_0;
+      BuildOperandTableIndex(*pOperandTable);
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_1:
       *pOperandTable = &table_1_1;
+      BuildOperandTableIndex(*pOperandTable);
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_2:
     case SPV_ENV_OPENCL_2_2:
       *pOperandTable = &table_1_2;
+      BuildOperandTableIndex(*pOperandTable);
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOperandTableGet()");
@@ -101,19 +123,12 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
-    const auto& group = table->types[typeIndex];
-    if (type != group.type) continue;
-    for (uint64_t index = 0; index < group.count; ++index) {
-      const auto& entry = group.entries[index];
-      if (value == entry.value) {
-        *pEntry = &entry;
-        return SPV_SUCCESS;
-      }
-    }
-  }
+  auto it = table->index.find(MakeOperandTableKey(type, value));
+  if (it == table->index.end())
+    return SPV_ERROR_INVALID_LOOKUP;
 
-  return SPV_ERROR_INVALID_LOOKUP;
+  *pEntry = it->second;
+  return SPV_SUCCESS;
 }
 
 const char* spvOperandTypeStr(spv_operand_type_t type) {
