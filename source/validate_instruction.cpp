@@ -172,6 +172,12 @@ spv_result_t ExtensionCheck(ValidationState_t& _,
        ++operand_index) {
     const auto& operand = inst->operands[operand_index];
     const uint32_t word = inst->words[operand.offset];
+    if (operand.type == SPV_OPERAND_TYPE_ID ||
+        operand.type == SPV_OPERAND_TYPE_TYPE_ID ||
+        operand.type == SPV_OPERAND_TYPE_RESULT_ID) {
+      // These can't possibly require any extensions!
+      continue;
+    }
     const ExtensionSet required_extensions =
         RequiredExtensions(_, operand.type, word);
     if (!_.HasAnyOfExtensions(required_extensions)) {
