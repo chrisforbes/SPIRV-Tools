@@ -78,6 +78,18 @@ void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount,
   }
 }
 
+static void BuildOpcodeTableIndex(spv_opcode_table table) {
+  if (table->index.size())
+    return; // Already built.
+
+  for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
+    auto const &entry = table->entries[opcodeIndex];
+    auto &tableEntry = table->index[entry.opcode];
+    if (!tableEntry)
+      tableEntry = &entry;
+  }
+}
+
 spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
                                spv_target_env env) {
   if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
@@ -99,13 +111,16 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
     case SPV_ENV_OPENGL_4_3:
     case SPV_ENV_OPENGL_4_5:
       *pInstTable = &table_1_0;
+      BuildOpcodeTableIndex(*pInstTable);
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_1:
       *pInstTable = &table_1_1;
+      BuildOpcodeTableIndex(*pInstTable);
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_2:
     case SPV_ENV_OPENCL_2_2:
       *pInstTable = &table_1_2;
+      BuildOpcodeTableIndex(*pInstTable);
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOpcodeTableGet()");
@@ -141,16 +156,12 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  // TODO: As above this lookup is not optimal.
-  for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
-    if (opcode == table->entries[opcodeIndex].opcode) {
-      // NOTE: Found the Opcode!
-      *pEntry = &table->entries[opcodeIndex];
-      return SPV_SUCCESS;
-    }
-  }
+  auto it = table->index.find(opcode);
+  if (it == table->index.end())
+    return SPV_ERROR_INVALID_LOOKUP;
 
-  return SPV_ERROR_INVALID_LOOKUP;
+  *pEntry = it->second;
+  return SPV_SUCCESS;
 }
 
 void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,

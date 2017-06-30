@@ -70,6 +70,7 @@ typedef struct spv_ext_inst_group_t {
 typedef struct spv_opcode_table_t {
   const uint32_t count;
   const spv_opcode_desc_t* entries;
+  mutable std::unordered_map<uint32_t, const spv_opcode_desc_t *> index;
 } spv_opcode_table_t;
 
 typedef struct spv_operand_table_t {
