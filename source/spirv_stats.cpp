@@ -114,13 +114,12 @@ class StatsAggregator {
     const Instruction& inst = GetCurrentInstruction();
     if (inst.opcode() != SpvOpConstant) return;
     const uint32_t type_id = inst.GetOperandAs<uint32_t>(0);
-    const auto type_decl_it = vstate_->all_definitions().find(type_id);
-    assert(type_decl_it != vstate_->all_definitions().end());
-    const Instruction& type_decl_inst = *type_decl_it->second;
-    const SpvOp type_op = type_decl_inst.opcode();
+    auto type_decl_inst = vstate_->FindDef(type_id);
+    assert(type_decl_inst);
+    const SpvOp type_op = type_decl_inst->opcode();
     if (type_op == SpvOpTypeInt) {
-      const uint32_t bit_width = type_decl_inst.GetOperandAs<uint32_t>(1);
-      const uint32_t is_signed = type_decl_inst.GetOperandAs<uint32_t>(2);
+      const uint32_t bit_width = type_decl_inst->GetOperandAs<uint32_t>(1);
+      const uint32_t is_signed = type_decl_inst->GetOperandAs<uint32_t>(2);
       assert(is_signed == 0 || is_signed == 1);
       if (bit_width == 16) {
         if (is_signed)
@@ -141,7 +140,7 @@ class StatsAggregator {
         assert(false && "TypeInt bit width is not 16, 32 or 64");
       }
     } else if (type_op == SpvOpTypeFloat) {
-      const uint32_t bit_width = type_decl_inst.GetOperandAs<uint32_t>(1);
+      const uint32_t bit_width = type_decl_inst->GetOperandAs<uint32_t>(1);
       if (bit_width == 32) {
         ++stats_->f32_constant_hist[inst.GetOperandAs<float>(2)];
       } else if (bit_width == 64) {
