@@ -205,21 +205,20 @@ vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return all_definitions_.find(id) != end(all_definitions_);
+  return id < all_definitions_.size() &&
+    all_definitions_[id];
 }
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {
-  auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end())
+  if (id >= all_definitions_.size())
     return nullptr;
-  return it->second;
+  return all_definitions_[id];
 }
 
 Instruction* ValidationState_t::FindDef(uint32_t id) {
-  auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end())
+  if (id >= all_definitions_.size())
     return nullptr;
-  return it->second;
+  return all_definitions_[id];
 }
 
 // Increments the instruction count. Used for diagnostic
@@ -372,7 +371,8 @@ void ValidationState_t::RegisterInstruction(
   }
   uint32_t id = ordered_instructions_.back().id();
   if (id) {
-    all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
+    assert(id < all_definitions_.size());
+    all_definitions_[id] = &ordered_instructions_.back();
   }
 
   // If the instruction is using an OpTypeSampledImage as an operand, it should
@@ -407,7 +407,10 @@ void ValidationState_t::RegisterSampledImageConsumer(uint32_t sampled_image_id,
 
 uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
 
-void ValidationState_t::setIdBound(const uint32_t bound) { id_bound_ = bound; }
+void ValidationState_t::setIdBound(const uint32_t bound) {
+  id_bound_ = bound;
+  all_definitions_.resize(bound);   // initially, all ids are invalid (0).
+}
 
 bool ValidationState_t::RegisterUniqueTypeDeclaration(
     const spv_parsed_instruction_t& inst) {

@@ -273,7 +273,7 @@ class ValidationState_t {
   }
 
   /// Returns a map of instructions mapped by their result id
-  const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
+  const std::vector<Instruction *>& all_definitions() const {
     return all_definitions_;
   }
 
@@ -370,7 +370,7 @@ class ValidationState_t {
   std::deque<Instruction> ordered_instructions_;
 
   /// Instructions that can be referenced by Ids
-  std::unordered_map<uint32_t, Instruction*> all_definitions_;
+  std::vector<Instruction *> all_definitions_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;

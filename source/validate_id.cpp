@@ -3142,14 +3142,17 @@ spv_result_t UpdateIdUse(ValidationState_t& _) {
 /// checked during the initial binary parse in the IdPass below
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
   unordered_set<const Instruction*> phi_instructions;
-  for (const auto& definition : _.all_definitions()) {
+  const auto &all_definitions = _.all_definitions();
+  for (uint32_t id = 0; id < all_definitions.size(); id++) {
+    auto definition = all_definitions[id];
+    if (!definition) continue;
     // Check only those definitions defined in a function
-    if (const Function* func = definition.second->function()) {
-      if (const BasicBlock* block = definition.second->block()) {
+    if (const Function* func = definition->function()) {
+      if (const BasicBlock* block = definition->block()) {
         if (!block->reachable()) continue;
         // If the Id is defined within a block then make sure all references to
         // that Id appear in a blocks that are dominated by the defining block
-        for (auto& use_index_pair : definition.second->uses()) {
+        for (auto& use_index_pair : definition->uses()) {
           const Instruction* use = use_index_pair.first;
           if (const BasicBlock* use_block = use->block()) {
             if (use_block->reachable() == false) continue;
@@ -3157,7 +3160,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
               phi_instructions.insert(use);
             } else if (!block->dominates(*use->block())) {
               return _.diag(SPV_ERROR_INVALID_ID)
-                     << "ID " << _.getIdName(definition.first)
+                     << "ID " << _.getIdName(id)
                      << " defined in block " << _.getIdName(block->id())
                      << " does not dominate its use in block "
                      << _.getIdName(use_block->id());
@@ -3168,11 +3171,11 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
         // If the Ids defined within a function but not in a block(i.e. function
         // parameters, block ids), then make sure all references to that Id
         // appear within the same function
-        for (auto use : definition.second->uses()) {
+        for (auto use : definition->uses()) {
           const Instruction* inst = use.first;
           if (inst->function() && inst->function() != func) {
             return _.diag(SPV_ERROR_INVALID_ID)
-                   << "ID " << _.getIdName(definition.first)
+                   << "ID " << _.getIdName(id)
                    << " used in function "
                    << _.getIdName(inst->function()->id())
                    << " is used outside of it's defining function "
