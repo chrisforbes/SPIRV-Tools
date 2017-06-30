@@ -236,6 +236,8 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
 
 void spvPushOperandTypes(const spv_operand_type_t* types,
                          spv_operand_pattern_t* pattern) {
+  if (!types)
+      return;
   const spv_operand_type_t* endTypes;
   for (endTypes = types; *endTypes != SPV_OPERAND_TYPE_NONE; ++endTypes)
     ;

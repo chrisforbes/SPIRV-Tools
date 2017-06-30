@@ -281,20 +281,40 @@ class EnumerantInitializer(object):
         self.value = value
         self.caps = compose_capability_list(caps)
         self.exts = compose_extension_list(exts)
-        self.parameters = [convert_operand_kind(p) for p in parameters]
+        self.parameters = parameters
 
     def __str__(self):
         template = ['{{"{enumerant}"', '{value}',
-                    '{caps}', '{exts}', '{{{parameters}}}}}']
+                    '{caps}', '{exts}', '{parameters}}}']
         return ', '.join(template).format(
             enumerant=self.enumerant,
             value=self.value,
             caps=self.caps,
             exts=self.exts,
-            parameters=', '.join(self.parameters))
+            parameters=self.parameters)
 
+def generate_suboperand_list_entry(entry, suboperand_cache):
+    params = entry.get('parameters', [])
+    params = [p.get('kind') for p in params]
 
-def generate_enum_operand_kind_entry(entry):
+    if len(params) and str(params) not in suboperand_cache:
+        index = len(suboperand_cache)
+        params2 = zip(params, [''] * len(params))
+        params2 = [convert_operand_kind(p) for p in params2]
+        params2 = ', '.join(params2)
+        name = '{}_Suboperands{}'.format(PYGEN_VARIABLE_PREFIX, index)
+        suboperand_cache[str(params)] = name
+        return 'static const spv_operand_type_t {name}[] = {{{params}, SPV_OPERAND_TYPE_NONE}};\n'.format(
+            name=name,
+            params=params2)
+    else:
+        return ''
+
+def generate_suboperand_list(enum, suboperand_cache):
+    return ''.join(generate_suboperand_list_entry(e, suboperand_cache)
+                   for e in enum.get('enumerants', []))
+
+def generate_enum_operand_kind_entry(entry, suboperand_cache):
     """Returns the C initializer for the given operand enum entry.
 
     Arguments:
@@ -309,7 +329,7 @@ def generate_enum_operand_kind_entry(entry):
     exts = entry.get('extensions', [])
     params = entry.get('parameters', [])
     params = [p.get('kind') for p in params]
-    params = zip(params, [''] * len(params))
+    params = suboperand_cache[str(params)] if len(params) else 'nullptr'
 
     assert enumerant is not None
     assert value is not None
@@ -317,13 +337,13 @@ def generate_enum_operand_kind_entry(entry):
     return str(EnumerantInitializer(enumerant, value, caps, exts, params))
 
 
-def generate_enum_operand_kind(enum):
+def generate_enum_operand_kind(enum, suboperand_cache):
     """Returns the C definition for the given operand kind."""
     kind = enum.get('kind')
     assert kind is not None
 
     name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
-    entries = ['  {}'.format(generate_enum_operand_kind_entry(e))
+    entries = ['  {}'.format(generate_enum_operand_kind_entry(e, suboperand_cache))
                for e in enum.get('enumerants', [])]
 
     template = ['static const spv_operand_desc_t {name}[] = {{',
@@ -337,8 +357,12 @@ def generate_enum_operand_kind(enum):
 
 def generate_operand_kind_table(enums):
     """Returns the info table containing all SPIR-V operand kinds."""
+    suboperand_cache = {}
+    suboperands = [generate_suboperand_list(e, suboperand_cache)
+                   for e in enums
+                   if e.get('category') in ['ValueEnum', 'BitEnum']]
     # We only need to output info tables for those operand kinds that are enums.
-    enums = [generate_enum_operand_kind(e)
+    enums = [generate_enum_operand_kind(e, suboperand_cache)
              for e in enums
              if e.get('category') in ['ValueEnum', 'BitEnum']]
     # We have three operand kinds that requires their optional counterpart to
@@ -364,7 +388,7 @@ def generate_operand_kind_table(enums):
     table = '\n'.join(template).format(
         p=PYGEN_VARIABLE_PREFIX, enums=',\n'.join(table_entries))
 
-    return '\n\n'.join(enum_entries + (table,))
+    return ''.join(suboperands) + '\n' + '\n\n'.join(enum_entries + (table,))
 
 
 def get_extension_list(operands):

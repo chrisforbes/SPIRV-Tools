@@ -45,7 +45,7 @@ typedef struct spv_operand_desc_t {
   // and disassembler ignore this rule, so you can freely process invalid
   // modules.
   const libspirv::ExtensionSet extensions;
-  const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  const spv_operand_type_t *operandTypes;
 } spv_operand_desc_t;
 
 typedef struct spv_operand_desc_group_t {
