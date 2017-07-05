@@ -325,8 +325,8 @@ bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
 // constant-defining instruction (either OpConstant or
 // OpSpecConstant). typeWords are the words of the constant's-type-defining
 // OpTypeInt.
-bool aboveZero(const vector<uint32_t>& constWords,
-               const vector<uint32_t>& typeWords) {
+bool aboveZero(libspirv::Instruction::words_vector_t const& constWords,
+               libspirv::Instruction::words_vector_t const& typeWords) {
   const uint32_t width = typeWords[2];
   const bool is_signed = typeWords[3] > 0;
   const uint32_t loWord = constWords[3];
@@ -755,7 +755,7 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
 // True if instruction defines a type that can have a null value, as defined by
 // the SPIR-V spec.  Tracks composite-type components through module to check
 // nullability transitively.
-bool IsTypeNullable(const vector<uint32_t>& instruction,
+bool IsTypeNullable(libspirv::Instruction::words_vector_t const & instruction,
                     const ValidationState_t& module) {
   uint16_t opcode;
   uint16_t word_count;

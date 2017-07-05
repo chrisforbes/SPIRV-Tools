@@ -67,8 +67,8 @@ public:
     size_ = init.size();
   }
 
-  template<int M>
-  small_vector(small_vector<T, M> const & v) {
+  small_vector(small_vector<T, N> const & v)
+    : size_(0), capacity_(N) {
     reserve(v.size());
     copy_construct_elems(v.begin(), v.end(), begin());
     size_ = v.size();

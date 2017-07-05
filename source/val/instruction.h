@@ -65,8 +65,10 @@ class Instruction {
   /// The word used to define the Instruction
   uint32_t word(size_t index) const { return words_[index]; }
 
+  using words_vector_t = small_vector<uint32_t, 4>;
+
   /// The words used to define the Instruction
-  const std::vector<uint32_t>& words() const { return words_; }
+  const words_vector_t& words() const { return words_; }
 
   using operands_vector_t = small_vector<spv_parsed_operand_t, 4>;
   /// The operands of the Instruction
@@ -89,7 +91,7 @@ class Instruction {
   }
 
  private:
-  const std::vector<uint32_t> words_;
+  const words_vector_t words_;
   const operands_vector_t operands_;
   spv_parsed_instruction_t inst_;
 
