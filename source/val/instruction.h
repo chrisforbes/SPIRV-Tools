@@ -23,6 +23,7 @@
 
 #include "spirv-tools/libspirv.h"
 #include "table.h"
+#include "small_vector.h"
 
 namespace libspirv {
 
@@ -52,11 +53,12 @@ class Instruction {
   /// was defined outside of a BasicBlock
   const BasicBlock* block() const { return block_; }
 
+  using uses_vector_t = small_vector<std::pair<const Instruction*, uint32_t>, 4>;
   /// Returns a vector of pairs of all references to this instruction's result
   /// id. The first element is the instruction in which this result id was
   /// referenced and the second is the index of the word in that instruction
   /// where this result id appeared
-  const std::vector<std::pair<const Instruction*, uint32_t>>& uses() const {
+  const uses_vector_t& uses() const {
     return uses_;
   }
 
@@ -100,7 +102,7 @@ class Instruction {
   /// id. The first element is the instruction in which this result id was
   /// referenced and the second is the index of the word in the referencing
   /// instruction where this instruction appeared
-  std::vector<std::pair<const Instruction*, uint32_t>> uses_;
+  uses_vector_t uses_;
 };
 
 #define OPERATOR(OP)                                                \

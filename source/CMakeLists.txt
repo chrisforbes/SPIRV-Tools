@@ -214,6 +214,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/operand.h
   ${CMAKE_CURRENT_SOURCE_DIR}/parsed_operand.h
   ${CMAKE_CURRENT_SOURCE_DIR}/print.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/small_vector.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_definition.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.h
