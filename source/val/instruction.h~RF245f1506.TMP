@@ -70,7 +70,7 @@ class Instruction {
 
   using operands_vector_t = small_vector<spv_parsed_operand_t, 4>;
   /// The operands of the Instruction
-  const operands_vector_t& operands() const {
+  const std::vector<spv_parsed_operand_t>& operands() const {
     return operands_;
   }
 
@@ -82,7 +82,7 @@ class Instruction {
   // Casts the words belonging to the operand under |index| to |T| and returns.
   template <typename T>
   T GetOperandAs(size_t index) const {
-    const spv_parsed_operand_t& operand = operands_[index];
+    const spv_parsed_operand_t& operand = operands_.at(index);
     assert(operand.num_words * 4 >= sizeof(T));
     assert(operand.offset + operand.num_words <= inst_.num_words);
     return *reinterpret_cast<const T*>(&words_[operand.offset]);
@@ -90,7 +90,7 @@ class Instruction {
 
  private:
   const std::vector<uint32_t> words_;
-  const operands_vector_t operands_;
+  const std::vector<spv_parsed_operand_t> operands_;
   spv_parsed_instruction_t inst_;
 
   /// The function in which this instruction was declared

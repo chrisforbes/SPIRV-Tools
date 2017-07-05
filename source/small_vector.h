@@ -51,6 +51,14 @@ public:
     : size_(0), capacity_(N)
   {}
 
+  small_vector(const_iterator first, const_iterator last)
+    : size_(0), capacity_(N)
+  {
+    reserve(last - first);
+    copy_construct_elems(first, last, begin());
+    size_ = last - first;
+  }
+
   small_vector(std::initializer_list<value_type> init)
     : size_(0), capacity_(N)
   {
@@ -157,6 +165,9 @@ public:
     return begin() + size_;
   }
 
+  iterator data() { return begin() };
+  const_iterator data() const { return begin(); }
+
   size_type size() const { return size_; }
   size_type capacity() const { return capacity_; }
 
@@ -165,4 +176,7 @@ public:
 
   reference front() { return *begin(); }
   reference back() { return *(begin() + size_ - 1); }
+
+  reference operator[](size_t index) { return *(begin() + index); }
+  const_reference operator[](size_t index) const { return *(begin() + index); }
 };
