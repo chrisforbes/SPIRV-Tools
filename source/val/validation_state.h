@@ -342,7 +342,8 @@ class ValidationState_t {
   int instruction_counter_;
 
   /// IDs which have been forward declared but have not been defined
-  std::unordered_set<uint32_t> unresolved_forward_ids_;
+  int unresolved_forward_id_count_;
+  std::vector<uint64_t> unresolved_forward_ids_;
 
   /// IDs that have been declared as forward pointers.
   std::unordered_set<uint32_t> forward_pointer_ids_;

@@ -134,6 +134,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     : context_(ctx),
       options_(opt),
       instruction_counter_(0),
+      unresolved_forward_id_count_(0),
       unresolved_forward_ids_{},
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
@@ -153,12 +154,20 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
 }
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
-  unresolved_forward_ids_.insert(id);
+  auto & chunk = unresolved_forward_ids_[id >> 6];
+  auto mask = 1ull << (id & 0x3f);
+  chunk |= mask;
+  ++unresolved_forward_id_count_;
   return SPV_SUCCESS;
 }
 
 spv_result_t ValidationState_t::RemoveIfForwardDeclared(uint32_t id) {
-  unresolved_forward_ids_.erase(id);
+  auto & chunk = unresolved_forward_ids_[id >> 6];
+  auto mask = 1ull << (id & 0x3f);
+  if (chunk & mask) {
+    chunk &= ~mask;
+    --unresolved_forward_id_count_;
+  }
   return SPV_SUCCESS;
 }
 
@@ -195,12 +204,20 @@ string ValidationState_t::getIdOrName(uint32_t id) const {
 }
 
 size_t ValidationState_t::unresolved_forward_id_count() const {
-  return unresolved_forward_ids_.size();
+  return unresolved_forward_id_count_;
 }
 
 vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
-  vector<uint32_t> out(begin(unresolved_forward_ids_),
-                       end(unresolved_forward_ids_));
+  vector<uint32_t> out;
+  for (uint32_t id = 0; id < id_bound_;) {
+    if (!unresolved_forward_ids_[id >> 6])
+      id += 64;
+    else {
+      if (unresolved_forward_ids_[id >> 6] & (1ull << (id & 0x3f)))
+        out.push_back(id);
+      ++id;
+    }
+  }
   return out;
 }
 
@@ -410,6 +427,7 @@ uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
 void ValidationState_t::setIdBound(const uint32_t bound) {
   id_bound_ = bound;
   all_definitions_.resize(bound);   // initially, all ids are invalid (0).
+  unresolved_forward_ids_.resize((bound + 63)/ 64);
 }
 
 bool ValidationState_t::RegisterUniqueTypeDeclaration(
