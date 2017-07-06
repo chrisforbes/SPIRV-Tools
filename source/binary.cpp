@@ -199,7 +199,7 @@ class Parser {
     // Maps a result ID to its type ID.  By convention:
     //  - a result ID that is a type definition maps to itself.
     //  - a result ID without a type maps to 0.  (E.g. for OpLabel)
-    std::unordered_map<uint32_t, uint32_t> id_to_type_id;
+    std::vector<uint32_t> id_to_type_id;
     // Maps a type ID to its number type description.
     std::unordered_map<uint32_t, NumberType> type_id_to_number_type_info;
     // Maps an ExtInstImport id to the extended instruction type.
@@ -255,6 +255,8 @@ spv_result_t Parser::parseModule() {
       return error;
     }
   }
+
+  _.id_to_type_id.resize(header.bound);
 
   // Process the instructions.
   _.word_index = SPV_INDEX_INSTRUCTION;
@@ -429,15 +431,17 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       inst->result_id = word;
       // Save the result ID to type ID mapping.
       // In the grammar, type ID always appears before result ID.
-      if (_.id_to_type_id.find(inst->result_id) != _.id_to_type_id.end())
-        return diagnostic(SPV_ERROR_INVALID_ID) << "Id " << inst->result_id
-                                                << " is defined more than once";
-      // Record it.
-      // A regular value maps to its type.  Some instructions (e.g. OpLabel)
-      // have no type Id, and will map to 0.  The result Id for a
-      // type-generating instruction (e.g. OpTypeInt) maps to itself.
-      _.id_to_type_id[inst->result_id] =
+      if (inst->result_id < _.id_to_type_id.size()) {
+        if (_.id_to_type_id[inst->result_id] != 0)
+          return diagnostic(SPV_ERROR_INVALID_ID) << "Id " << inst->result_id
+            << " is defined more than once";
+        // Record it.
+        // A regular value maps to its type.  Some instructions (e.g. OpLabel)
+        // have no type Id, and will map to 0.  The result Id for a
+        // type-generating instruction (e.g. OpTypeInt) maps to itself.
+        _.id_to_type_id[inst->result_id] =
           spvOpcodeGeneratesType(opcode) ? inst->result_id : inst->type_id;
+      }
       break;
 
     case SPV_OPERAND_TYPE_ID:
@@ -511,13 +515,12 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         // The literal operands have the same type as the value
         // referenced by the selector Id.
         const uint32_t selector_id = peekAt(inst_offset + 1);
-        const auto type_id_iter = _.id_to_type_id.find(selector_id);
-        if (type_id_iter == _.id_to_type_id.end() ||
-            type_id_iter->second == 0) {
+        if (selector_id >= _.id_to_type_id.size() ||
+            _.id_to_type_id[selector_id] == 0) {
           return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
                               << " has no type";
         }
-        uint32_t type_id = type_id_iter->second;
+        uint32_t type_id = _.id_to_type_id[selector_id];
 
         if (selector_id == type_id) {
           // Recall that by convention, a result ID that is a type definition
