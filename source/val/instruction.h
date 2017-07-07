@@ -65,7 +65,7 @@ class Instruction {
   /// The word used to define the Instruction
   uint32_t word(size_t index) const { return words_[index]; }
 
-  using words_vector_t = small_vector<uint32_t, 4>;
+  using words_vector_t = small_vector<uint32_t, 8>;
 
   /// The words used to define the Instruction
   const words_vector_t& words() const { return words_; }
