@@ -154,7 +154,9 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
 }
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
-  assert(id < unresolved_forward_ids_.size() * 64);
+  if (id >= id_bound_)
+    return SPV_ERROR_INVALID_ID;
+
   auto & chunk = unresolved_forward_ids_[id >> 6];
   auto mask = 1ull << (id & 0x3f);
   if (!(chunk & mask)) {
@@ -165,7 +167,9 @@ spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
 }
 
 spv_result_t ValidationState_t::RemoveIfForwardDeclared(uint32_t id) {
-  assert(id < unresolved_forward_ids_.size() * 64);
+  if (id >= id_bound_)
+    return SPV_ERROR_INVALID_ID;
+
   auto & chunk = unresolved_forward_ids_[id >> 6];
   auto mask = 1ull << (id & 0x3f);
   if (chunk & mask) {
