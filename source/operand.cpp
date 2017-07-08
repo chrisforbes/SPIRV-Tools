@@ -312,10 +312,13 @@ spv_operand_type_t spvTakeFirstMatchableOperand(
     spv_operand_pattern_t* pattern) {
   assert(!pattern->empty());
   spv_operand_type_t result;
-  do {
     result = pattern->back();
     pattern->pop_back();
-  } while (spvExpandOperandSequenceOnce(result, pattern));
+    if (spvOperandIsVariable(result)) {
+      spvExpandOperandSequenceOnce(result, pattern);
+      result = pattern->back();
+      pattern->pop_back();
+    }
   return result;
 }
 
