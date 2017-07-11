@@ -3058,8 +3058,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 // a function object that will return true if the index
 // of the operand can be forwarad declared. This function will
 // used in the SSA validation stage of the pipeline
-function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
-  function<bool(unsigned index)> out;
+bool CanBeForwardDeclared(SpvOp opcode, unsigned index) {
   switch (opcode) {
     case SpvOpExecutionMode:
     case SpvOpEntryPoint:
@@ -3071,48 +3070,47 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpTypeStruct:
     case SpvOpBranch:
     case SpvOpLoopMerge:
-      out = [](unsigned) { return true; };
+      return true;
       break;
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
     case SpvOpBranchConditional:
     case SpvOpSwitch:
-      out = [](unsigned index) { return index != 0; };
+      return index != 0;
       break;
 
     case SpvOpFunctionCall:
       // The Function parameter.
-      out = [](unsigned index) { return index == 2; };
+      return index == 2;
       break;
 
     case SpvOpPhi:
-      out = [](unsigned index) { return index > 1; };
+      return index > 1;
       break;
 
     case SpvOpEnqueueKernel:
       // The Invoke parameter.
-      out = [](unsigned index) { return index == 8; };
+      return index == 8;
       break;
 
     case SpvOpGetKernelNDrangeSubGroupCount:
     case SpvOpGetKernelNDrangeMaxSubGroupSize:
       // The Invoke parameter.
-      out = [](unsigned index) { return index == 3; };
+      return index == 3;
       break;
 
     case SpvOpGetKernelWorkGroupSize:
     case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
       // The Invoke parameter.
-      out = [](unsigned index) { return index == 2; };
+      return index == 2;
       break;
     case SpvOpTypeForwardPointer:
-      out = [](unsigned index) { return index == 0; };
+      return index == 0;
       break;
     default:
-      out = [](unsigned) { return false; };
+      return false;
       break;
   }
-  return out;
 }
 }  // anonymous namespace
 
@@ -3214,9 +3212,6 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
 // instruction operand's ID can be forward referenced.
 spv_result_t IdPass(ValidationState_t& _,
                     const spv_parsed_instruction_t* inst) {
-  auto can_have_forward_declared_ids =
-      getCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
-
   // Keep track of a result id defined by this instruction.  0 means it
   // does not define an id.
   uint32_t result_id = 0;
@@ -3251,7 +3246,7 @@ spv_result_t IdPass(ValidationState_t& _,
       case SPV_OPERAND_TYPE_SCOPE_ID:
         if (_.IsDefinedId(operand_word)) {
           ret = SPV_SUCCESS;
-        } else if (can_have_forward_declared_ids(i)) {
+        } else if (CanBeForwardDeclared(SpvOp(inst->opcode), i)) {
           ret = _.ForwardDeclareId(operand_word);
         } else {
           ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
