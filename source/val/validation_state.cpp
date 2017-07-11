@@ -149,7 +149,8 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       grammar_(ctx),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
-      in_function_(false) {
+      in_function_(false),
+      words_{} {
   assert(opt && "Validator options may not be Null.");
 }
 
@@ -253,6 +254,8 @@ Instruction* ValidationState_t::FindDef(uint32_t id) {
 
 void ValidationState_t::set_instruction_count_estimate(uint32_t num_instructions) {
   ordered_instructions_.reserve(num_instructions);
+  words_.reserve(num_instructions  * 2);    // TODO: untangle this: pass #words,
+                                            // do our other stuff in here.
 }
 
 // Increments the instruction count. Used for diagnostic
@@ -397,11 +400,16 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
 
 void ValidationState_t::RegisterInstruction(
     const spv_parsed_instruction_t& inst) {
+  auto first_word = words_.size();
+  auto pi = inst;
+  words_.insert(words_.end(), pi.words, pi.words + pi.num_words);
+  pi.words = &words_[first_word];
+
   if (in_function_body()) {
-    ordered_instructions_.emplace_back(&inst, &current_function(),
+    ordered_instructions_.emplace_back(&pi, &current_function(),
                                        current_function().current_block());
   } else {
-    ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
+    ordered_instructions_.emplace_back(&pi, nullptr, nullptr);
   }
   uint32_t id = ordered_instructions_.back().id();
   if (id) {

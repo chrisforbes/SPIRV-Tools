@@ -419,6 +419,9 @@ class ValidationState_t {
   // The state of optional features.  These are determined by capabilities
   // declared by the module.
   Feature features_;
+
+  // Flat structures underlying Instructions
+  std::vector<uint32_t> words_;
 };
 
 }  /// namespace libspirv
