@@ -105,6 +105,8 @@ class ValidationState_t {
   /// Mutator function for ID bound.
   void setIdBound(uint32_t bound);
 
+  void set_instruction_count_estimate(uint32_t num_instructions);
+
   /// Like getIdName but does not display the id if the \p id has a name
   std::string getIdOrName(uint32_t id) const;
 
@@ -268,7 +270,7 @@ class ValidationState_t {
   Instruction* FindDef(uint32_t id);
 
   /// Returns a deque of instructions in the order they appear in the binary
-  const std::deque<Instruction>& ordered_instructions() const {
+  const std::vector<Instruction>& ordered_instructions() const {
     return ordered_instructions_;
   }
 
@@ -368,7 +370,7 @@ class ValidationState_t {
   libspirv::ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
-  std::deque<Instruction> ordered_instructions_;
+  std::vector<Instruction> ordered_instructions_;
 
   /// Instructions that can be referenced by Ids
   std::vector<Instruction *> all_definitions_;

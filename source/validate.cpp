@@ -255,6 +255,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << "Invalid SPIR-V header.";
   }
 
+  vstate->set_instruction_count_estimate(uint32_t(num_words) / 2);
+
   // Look for OpExtension instructions and register extensions.
   // Diagnostics if any will be produced in the next pass (ProcessInstruction).
   spvBinaryParse(&context, vstate, words, num_words,

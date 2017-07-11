@@ -251,6 +251,10 @@ Instruction* ValidationState_t::FindDef(uint32_t id) {
   return all_definitions_[id];
 }
 
+void ValidationState_t::set_instruction_count_estimate(uint32_t num_instructions) {
+  ordered_instructions_.reserve(num_instructions);
+}
+
 // Increments the instruction count. Used for diagnostic
 int ValidationState_t::increment_instruction_count() {
   return instruction_counter_++;
