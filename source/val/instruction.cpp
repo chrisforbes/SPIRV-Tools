@@ -35,7 +35,7 @@ Instruction::Instruction(const spv_parsed_instruction_t* inst,
                          Function* defining_function,
                          BasicBlock* defining_block)
     : words_(inst->words, inst->num_words),
-      operands_(inst->operands, inst->operands + inst->num_operands),
+      operands_(inst->operands, inst->num_operands),
       inst_({words_.data(), inst->num_words, inst->opcode, inst->ext_inst_type,
              inst->type_id, inst->result_id, operands_.data(),
              inst->num_operands}),

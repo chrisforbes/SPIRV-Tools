@@ -70,7 +70,7 @@ class Instruction {
   /// The words used to define the Instruction
   const words_vector_t& words() const { return words_; }
 
-  using operands_vector_t = small_vector<spv_parsed_operand_t, 4>;
+  using operands_vector_t = span<spv_parsed_operand_t const>;
   /// The operands of the Instruction
   const operands_vector_t& operands() const {
     return operands_;

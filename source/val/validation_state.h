@@ -422,6 +422,7 @@ class ValidationState_t {
 
   // Flat structures underlying Instructions
   std::vector<uint32_t> words_;
+  std::vector<spv_parsed_operand_t> operands_;
 };
 
 }  /// namespace libspirv
