@@ -196,4 +196,39 @@ public:
   const_reference operator[](size_t index) const { return *(begin() + index); }
 };
 
+// non-owning view onto some underlying contiguous sequence of Ts
+template<typename T>
+class span
+{
+  T* data_;
+  size_t len_;
+
+public:
+  using iterator = T*;
+  using pointer = T*;
+  using reference = T&;
+  using const_iterator = T const *;
+  using const_pointer = T const *;
+  using const_reference = T const &;
+
+  span() : data_{nullptr}, len_{0} {}
+  span(T* data, size_t len) : data_{ data }, len_{ len } {}
+  span(T const & t) : data_{ t.data_ }, len_{ t.len_ } {}
+
+  iterator begin() { return data_; }
+  iterator end() { return data_ + len_; }
+  const_iterator begin() const { return data_; }
+  const_iterator end() const { return data_ + len_; }
+  reference front() { return data_[0]; }
+  reference back() { return data_[len_ - 1]; }
+  const_reference front() const { return data_[0]; }
+  const_reference back() const { return data_[len_ - 1]; }
+  size_t size() const { return len_; }
+  pointer data() { return data_; }
+  const_pointer data() const { return data_; }
+
+  reference operator[](size_t n) { return data_[n]; }
+  const_reference operator[](size_t n) const { return data_[n]; }
+};
+
 #endif  // LIBSPIRV_SMALL_VECTOR_H_
